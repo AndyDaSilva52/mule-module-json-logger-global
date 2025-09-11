@@ -1,13 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module name="global-logger" category="SELECT" prefix="module-global-logger" doc:description="This module relies in runtime provided components" xmlns="http://www.mulesoft.org/schema/mule/module" xmlns:mule="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:tns="http://www.mulesoft.org/schema/mule/module-global-logger" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="
-           http://www.mulesoft.org/schema/mule/module http://www.mulesoft.org/schema/mule/module/current/mule-module.xsd
-           http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-           http://www.mulesoft.org/schema/mule/module-global-logger http://www.mulesoft.org/schema/mule/module-global-logger/current/mule-module-global-logger.xsd
-           http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+<module
+  name="global-logger"
+  category="SELECT"
+  prefix="module-json-logger-global"
+  doc:description="This module relies in runtime provided components"
 
-  <mule:sub-flow name="logging-main-flow" doc:id="d9d3d852-48c1-4162-864b-50b388523215">
+  xmlns="http://www.mulesoft.org/schema/mule/module"
+  xmlns:mule="http://www.mulesoft.org/schema/mule/core"
+  xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+  xmlns:tns="http://www.mulesoft.org/schema/mule/module-json-logger-global"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+  xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/module http://www.mulesoft.org/schema/mule/module/current/mule-module.xsd
 
-    <ee:transform doc:name="Set payloadToLog" doc:id="7c6fa4b3-42a3-46f3-875e-71e4367b7f37">
+        http://www.mulesoft.org/schema/mule/module-json-logger-global http://www.mulesoft.org/schema/mule/module-json-logger-global/current/mule-module-json-logger-global.xsd
+        http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+
+  <mule:sub-flow name="logging-main-flow">
+
+    <ee:transform doc:name="Set payloadToLog">
       <ee:message></ee:message>
       <ee:variables>
         <ee:set-variable variableName="paylodToLog">
@@ -32,7 +45,7 @@ output application/json skipNullOn="everywhere"
       </ee:variables>
     </ee:transform>
 
-    <ee:transform doc:name="Set payloadToLogWithMask" doc:id="c8f88ce6-6a95-4ab8-a678-edc3de415586">
+    <ee:transform doc:name="Set payloadToLogWithMask">
       <ee:variables>
         <ee:set-variable variableName="payloadToLogWithMask">
           <![CDATA[%dw 2.0
@@ -46,21 +59,21 @@ var fieldsToMask = vars.maskParams
       </ee:variables>
     </ee:transform>
 
-    <mule:choice doc:name="Log Level" doc:id="36800581-0b12-46ba-b562-200458617864">
+    <mule:choice doc:name="Log Level">
       <mule:when expression='#[upper(vars.logLevel) == "DEBUG"]'>
-        <mule:logger level="DEBUG" doc:name="Log DEBUG" doc:id="bfca84bb-3132-479c-b09d-0b10e632a6a9" message="#[vars.payloadToLogWithMask]" />
+        <mule:logger level="DEBUG" doc:name="Log DEBUG" message="#[vars.payloadToLogWithMask]" />
       </mule:when>
       <mule:when expression='#[upper(vars.logLevel) == "ERROR"]'>
-        <mule:logger level="ERROR" doc:name="Log ERROR" doc:id="c1f5079a-34b4-45e1-8914-fcd7bf5e209a" message="#[vars.payloadToLogWithMask]" />
+        <mule:logger level="ERROR" doc:name="Log ERROR" message="#[vars.payloadToLogWithMask]" />
       </mule:when>
       <mule:when expression='#[upper(vars.logLevel) == "TRACE"]'>
-        <mule:logger level="TRACE" doc:name="Log TRACE" doc:id="b9f31c58-cb01-42c0-a728-ae7f990d2595" message="#[vars.payloadToLogWithMask]" />
+        <mule:logger level="TRACE" doc:name="Log TRACE" message="#[vars.payloadToLogWithMask]" />
       </mule:when>
       <mule:when expression='#[upper(vars.logLevel) == "WARN"]'>
-        <mule:logger level="WARN"  doc:name="Log WARN"  doc:id="81c1f6e0-30da-4588-8059-41160adc31d2" message="#[vars.payloadToLogWithMask]" />
+        <mule:logger level="WARN"  doc:name="Log WARN"  message="#[vars.payloadToLogWithMask]" />
       </mule:when>
       <mule:otherwise>
-        <mule:logger level="INFO"  doc:name="Log INFO"  doc:id="370b9641-b8d1-4341-b8be-f0922029ee87" message="#[vars.payloadToLogWithMask]" />
+        <mule:logger level="INFO"  doc:name="Log INFO"  message="#[vars.payloadToLogWithMask]" />
       </mule:otherwise>
     </mule:choice>
   </mule:sub-flow>
@@ -81,8 +94,8 @@ var fieldsToMask = vars.maskParams
       <parameter name="maskParams"          type="string"          displayName="Mask Parameters"       use="OPTIONAL" defaultValue="#[p('mask.parameters')]"     doc:description="Pass parameters to mask" example="abc,xyz" />
     </parameters>
     <body>
-      <mule:async doc:name="Async" doc:id="1e9e0d64-07dc-4967-bdc9-2f03687e9d24">
-        <mule:flow-ref doc:name="call-logging-main-flow" doc:id="d9d3d852-48c1-4162-864b-50b388523215" name="logging-main-flow" />
+      <mule:async doc:name="Async">
+        <mule:flow-ref doc:name="call-logging-main-flow" name="logging-main-flow" />
       </mule:async>
     </body>
     <errors>
