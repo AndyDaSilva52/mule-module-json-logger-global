@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module name="global-logger" category="SELECT" prefix="module-global-logger" doc:description="This module relies in runtime provided components" xmlns="http://www.mulesoft.org/schema/mule/module" xmlns:mule="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:tns="http://www.mulesoft.org/schema/mule/module-global-logger" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="
+           http://www.mulesoft.org/schema/mule/module http://www.mulesoft.org/schema/mule/module/current/mule-module.xsd
+           http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+           http://www.mulesoft.org/schema/mule/module-global-logger http://www.mulesoft.org/schema/mule/module-global-logger/current/mule-module-global-logger.xsd
+           http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+
+  <mule:sub-flow name="logging-main-flow" doc:id="d9d3d852-48c1-4162-864b-50b388523215">
+
+    <ee:transform doc:name="Set payloadToLog" doc:id="7c6fa4b3-42a3-46f3-875e-71e4367b7f37">
+      <ee:message></ee:message>
+      <ee:variables>
+        <ee:set-variable variableName="paylodToLog">
+          <![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+---
+{
+  logLevel           : vars.logLevel default "INFO",
+  timestamp          : now(),
+  correlationId      : if(isEmpty(vars.correlationId)) correlationId else vars.correlationId,
+  apiName            : vars.apiName,
+  apilayerName       : vars.apilayerName,
+  requestURI         : vars.requestURI,
+  remoteAddress      : vars.remoteAddress,
+  httpMethod         : vars.httpMethod,
+  flowName           : vars.flowName,
+  businessProcessName: vars.businessProcessName,
+  downstreamResponse : vars.downstreamResponse,
+  logMessage         : vars.logMessage
+}]]>
+        </ee:set-variable>
+      </ee:variables>
+    </ee:transform>
+
+    <ee:transform doc:name="Set payloadToLogWithMask" doc:id="c8f88ce6-6a95-4ab8-a678-edc3de415586">
+      <ee:variables>
+        <ee:set-variable variableName="payloadToLogWithMask">
+          <![CDATA[%dw 2.0
+output application/json
+import mapLeafValues from dw::util::Tree
+var fieldsToMask = vars.maskParams
+---
+(if (fieldsToMask != null) vars.paylodToLog mapLeafValues ((value, path) -> if (fieldsToMask contains path[-1].selector)  "*******" else value) else vars.paylodToLog)
+]]>
+        </ee:set-variable>
+      </ee:variables>
+    </ee:transform>
+
+    <mule:choice doc:name="Log Level" doc:id="36800581-0b12-46ba-b562-200458617864">
+      <mule:when expression='#[upper(vars.logLevel) == "DEBUG"]'>
+        <mule:logger level="DEBUG" doc:name="Log DEBUG" doc:id="bfca84bb-3132-479c-b09d-0b10e632a6a9" message="#[vars.payloadToLogWithMask]" />
+      </mule:when>
+      <mule:when expression='#[upper(vars.logLevel) == "ERROR"]'>
+        <mule:logger level="ERROR" doc:name="Log ERROR" doc:id="c1f5079a-34b4-45e1-8914-fcd7bf5e209a" message="#[vars.payloadToLogWithMask]" />
+      </mule:when>
+      <mule:when expression='#[upper(vars.logLevel) == "TRACE"]'>
+        <mule:logger level="TRACE" doc:name="Log TRACE" doc:id="b9f31c58-cb01-42c0-a728-ae7f990d2595" message="#[vars.payloadToLogWithMask]" />
+      </mule:when>
+      <mule:when expression='#[upper(vars.logLevel) == "WARN"]'>
+        <mule:logger level="WARN"  doc:name="Log WARN"  doc:id="81c1f6e0-30da-4588-8059-41160adc31d2" message="#[vars.payloadToLogWithMask]" />
+      </mule:when>
+      <mule:otherwise>
+        <mule:logger level="INFO"  doc:name="Log INFO"  doc:id="370b9641-b8d1-4341-b8be-f0922029ee87" message="#[vars.payloadToLogWithMask]" />
+      </mule:otherwise>
+    </mule:choice>
+  </mule:sub-flow>
+
+  <operation name="LogMessage" doc:description="This operation builds a standard message and logs into the cloudhub log file">
+    <parameters>
+      <parameter name="logLevel"            type="log-level-type"  displayName="Log Level"                            defaultValue="DEBUG"                       doc:description="Select the appropriate log level" />
+      <parameter name="correlationId"       type="string"          displayName="Correlation Id"        use="OPTIONAL" defaultValue="#[correlationId]"            doc:description="Pass Correlation Id" />
+      <parameter name="apiName"             type="string"          displayName="API Name"              use="OPTIONAL" defaultValue="#[p('api.name')]"            doc:description="API Name" />
+      <parameter name="step"                type="string"          displayName="Step"                  use="OPTIONAL"                                            doc:description="Step of log" />
+      <parameter name="requestURI"          type="any"             displayName="Request URI"           use="OPTIONAL" defaultValue="#[attributes.requestUri]"    doc:description="HTTP Request URI" />
+      <parameter name="remoteAddress"       type="any"             displayName="Remote Address"        use="OPTIONAL" defaultValue="#[attributes.remoteAddress]" doc:description="IP Address of the calling System" />
+      <parameter name="httpMethod"          type="any"             displayName="HTTP Method"           use="OPTIONAL" defaultValue="#[attributes.method]"        doc:description="HTTP Method" />
+      <parameter name="flowName"            type="any"             displayName="Flow Name"             use="OPTIONAL" defaultValue="#[flow.name]"                doc:description="Logging flow Name or Errored flow name" />
+      <parameter name="businessProcessName" type="string"          displayName="Business Process Name" use="OPTIONAL" defaultValue="#[vars.businessProcessName]" doc:description="Business Process Name" />
+      <parameter name="downstreamResponse"  type="any"             displayName="Downstream Response"   use="OPTIONAL"                                            doc:description="Downstream Response" />
+      <parameter name="logMessage"          type="any"             displayName="Log Message"           use="OPTIONAL"                                            doc:description="Message to log like payload, queryParams, headers" />
+      <parameter name="maskParams"          type="string"          displayName="Mask Parameters"       use="OPTIONAL" defaultValue="#[p('mask.parameters')]"     doc:description="Pass parameters to mask" example="abc,xyz" />
+    </parameters>
+    <body>
+      <mule:async doc:name="Async" doc:id="1e9e0d64-07dc-4967-bdc9-2f03687e9d24">
+        <mule:flow-ref doc:name="call-logging-main-flow" doc:id="d9d3d852-48c1-4162-864b-50b388523215" name="logging-main-flow" />
+      </mule:async>
+    </body>
+    <errors>
+      <error type="ANY" />
+    </errors>
+  </operation>
+
+</module>
