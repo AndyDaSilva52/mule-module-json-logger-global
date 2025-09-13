@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module
-    name="Global Logger"
+    name="JSON Logger Global"
     prefix="module-json-logger-global"
     category="CERTIFIED"
     doc:description="This module relies entirely in runtime provided components (no other Plugin dependencies)"
@@ -173,7 +173,7 @@
             <parameter name="message"    use="REQUIRED"    type="string"                                                doc:description="Free text to describe context of logging this log or exception entry" />
             <parameter name="content"    use="OPTIONAL"    type="string" role="CONTENT"                                 doc:description="Can contain attributes/payloads for logs, or exception payload for errors" />
             <parameter name="tracePoint"                   type="tracePoint"            defaultValue="START" />
-            <parameter name="level"                        type="logLevel"              defaultValue="INFO" />
+            <parameter name="level"                        type="priority"              defaultValue="INFO" />
             <parameter name="userId"     use="OPTIONAL"    type="string"                                                doc:description="The user of transaction" />
             <parameter name="category"   use="OPTIONAL"    type="string"                defaultValue="${api.category}"  doc:description="Specifies a category name that it adds to the log trace, before the output object. You might use a category to route your log messages, or you might set log levels based on category" />
             <parameter name="correlationId" tab="Advanced" type="string"                defaultValue="#[correlationId]" doc:description="Unique identifier value that is attached to messages that allows reference to a particular transaction or event chain" />

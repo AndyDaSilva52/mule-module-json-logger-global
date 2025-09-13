@@ -9,16 +9,16 @@
     <version>1.0.0</version>
     <packaging>mule-extension</packaging>
 
-    <name></name>
-    <description>A Mule log component that provides two operations: one for logging data with masking (data obfuscation) and another for logging without masking. This component allows you to log sensitive information securely by masking fields like passwords, tokens, and other personal data. It can be easily integrated into your Mule flows, and it is built using pure Mule DSL, relying on runtime operations such as set-payload, set-variable, etc.</description>
+    <name>JSON Logger Global</name>
+    <description>A Mule logging component that provides operations for logging data with and without masking. Securely masks sensitive information like passwords and tokens, easily integrates into Mule flows, and is built using pure Mule DSL.</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- Overridden by build.sh -->
-        <repo.id>Exchange2</repo.id>
-        <repo.url>https://maven.anypoint.mulesoft.com/api/v1/organizations/${project.groupId}/maven</repo.url>
+        <repo.id>anypoint-exchange-v3</repo.id>
+        <repo.url>https://maven.anypoint.mulesoft.com/api/v3/organizations/${project.groupId}/maven</repo.url>
 
         <!-- XML SDK properties -->
         <mule.version>4.6.0</mule.version>
@@ -131,6 +131,38 @@
 
         <plugins>
             <plugin>
+                <groupId>org.mule.tools.maven</groupId>
+                <artifactId>exchange-mule-maven-plugin</artifactId>
+                <version>0.0.23</version>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>exchange-pre-deploy</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>deploy</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>exchange-deploy</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.2.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.mule.tools.maven</groupId>
+                <artifactId>mule-maven-plugin</artifactId>
+                <version>3.8.2</version>
+                <extensions>true</extensions>
+            </plugin>
+            <plugin>
                 <!-- Build plugin for XML SDK extension -->
                 <groupId>org.mule.runtime.plugins</groupId>
                 <artifactId>mule-extensions-maven-plugin</artifactId>
@@ -167,5 +199,16 @@
             <layout>default</layout>
         </repository>
     </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>mulesoft-releases</id>
+            <name>MuleSoft Releases Repository</name>
+            <layout>default</layout>
+            <url>https://repository.mulesoft.org/releases/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
 
 </project>
