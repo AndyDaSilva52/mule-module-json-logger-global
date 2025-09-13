@@ -19,6 +19,18 @@
         defaultValue="client_secret,Authorization,token,password,email,mobilePhone,phone,CPF,cpf__c"
         doc:description="Specify the fields to be masked, separated by commas." />
 
+    <mule:sub-flow name="log-main-subflow">
+
+        <mule:choice doc:name="Priority/Level">
+            <mule:when expression='#[vars.level == "INFO"]' ><mule:logger level="INFO"  message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
+            <mule:when expression='#[vars.level == "WARN"]' ><mule:logger level="WARN"  message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
+            <mule:when expression='#[vars.level == "DEBUG"]'><mule:logger level="DEBUG" message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
+            <mule:when expression='#[vars.level == "ERROR"]'><mule:logger level="ERROR" message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
+            <mule:when expression='#[vars.level == "TRACE"]'><mule:logger level="TRACE" message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
+            <mule:otherwise>                                 <mule:logger level="ERROR" message="Unknown log level received" category="#[vars.category]" /></mule:otherwise>
+        </mule:choice>
+
+    </mule:sub-flow>
 
     <operation name="logWithMasking"
         doc:description="Logs sensitive data while masking or anonymizing certain information to ensure privacy and security.">
@@ -149,14 +161,8 @@
                 </mule:error-handler>
             </mule:try>
 
-            <mule:choice doc:name="Priority/Level">
-                <mule:when expression='#[vars.level == "INFO"]' ><mule:logger level="INFO"  message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
-                <mule:when expression='#[vars.level == "WARN"]' ><mule:logger level="WARN"  message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
-                <mule:when expression='#[vars.level == "DEBUG"]'><mule:logger level="DEBUG" message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
-                <mule:when expression='#[vars.level == "ERROR"]'><mule:logger level="ERROR" message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
-                <mule:when expression='#[vars.level == "TRACE"]'><mule:logger level="TRACE" message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
-                <mule:otherwise>                                 <mule:logger level="ERROR" message="Unknown log level received" category="#[vars.category]" /></mule:otherwise>
-            </mule:choice>
+            <mule:flow-ref name="log-main-subflow" />
+
         </body>
     </operation>
 
@@ -227,14 +233,7 @@
                 </mule:error-handler>
             </mule:try>
 
-            <mule:choice doc:name="Priority/Level">
-                <mule:when expression='#[vars.level == "INFO"]' ><mule:logger level="INFO"  message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
-                <mule:when expression='#[vars.level == "WARN"]' ><mule:logger level="WARN"  message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
-                <mule:when expression='#[vars.level == "DEBUG"]'><mule:logger level="DEBUG" message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
-                <mule:when expression='#[vars.level == "ERROR"]'><mule:logger level="ERROR" message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
-                <mule:when expression='#[vars.level == "TRACE"]'><mule:logger level="TRACE" message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
-                <mule:otherwise>                                 <mule:logger level="ERROR" message="Unknown log level received" category="#[vars.category]" /></mule:otherwise>
-            </mule:choice>
+            <mule:flow-ref name="log-main-subflow" />
 
         </body>
     </operation>
