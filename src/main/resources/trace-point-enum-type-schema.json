@@ -1,0 +1,13 @@
+{
+    "type": "string",
+    "enum": [
+        "START",
+        "BEFORE_TRANSFORM",
+        "AFTER_TRANSFORM",
+        "BEFORE_REQUEST",
+        "AFTER_REQUEST",
+        "FLOW",
+        "END",
+        "EXCEPTION"
+    ]
+}

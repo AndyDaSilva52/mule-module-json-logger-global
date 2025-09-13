@@ -1,106 +1,241 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module
-  name="global-logger"
-  category="SELECT"
-  prefix="module-json-logger-global"
-  doc:description="This module relies in runtime provided components"
-
-  xmlns="http://www.mulesoft.org/schema/mule/module"
-  xmlns:mule="http://www.mulesoft.org/schema/mule/core"
-  xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-  xmlns:tns="http://www.mulesoft.org/schema/mule/module-json-logger-global"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
-  xsi:schemaLocation="
+    name="Global Logger"
+    prefix="module-json-logger-global"
+    category="CERTIFIED"
+    doc:description="This module relies entirely in runtime provided components (no other Plugin dependencies)"
+    xmlns="http://www.mulesoft.org/schema/mule/module"
+    xmlns:mule="http://www.mulesoft.org/schema/mule/core"
+    xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
         http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-        http://www.mulesoft.org/schema/mule/module http://www.mulesoft.org/schema/mule/module/current/mule-module.xsd
+        http://www.mulesoft.org/schema/mule/module http://www.mulesoft.org/schema/mule/module/current/mule-module.xsd">
 
-        http://www.mulesoft.org/schema/mule/module-json-logger-global http://www.mulesoft.org/schema/mule/module-json-logger-global/current/mule-module-json-logger-global.xsd
-        http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    <property name="appName"       displayName="Application Name"            type="string" defaultValue="${app.name}" doc:description="Application name" />
+    <property name="appVersion"    displayName="Application Version"         type="string"                            doc:description="Application version" />
+    <property name="environment"   displayName="Environment"                 type="string" defaultValue="${mule.env}" doc:description="Execution environment name, typically loaded in a runtime property i.e: mule.env" />
+    <property name="fieldsMasking" displayName="Content fields data masking" type="string"
+        defaultValue="client_secret,Authorization,token,password,email,mobilePhone,phone,CPF,cpf__c"
+        doc:description="Specify the fields to be masked, separated by commas." />
 
-  <mule:sub-flow name="logging-main-flow">
 
-    <ee:transform doc:name="Set payloadToLog">
-      <ee:message></ee:message>
-      <ee:variables>
-        <ee:set-variable variableName="paylodToLog">
-          <![CDATA[%dw 2.0
-output application/json skipNullOn="everywhere"
----
-{
-  logLevel           : vars.logLevel default "INFO",
-  timestamp          : now(),
-  correlationId      : if(isEmpty(vars.correlationId)) correlationId else vars.correlationId,
-  apiName            : vars.apiName,
-  apilayerName       : vars.apilayerName,
-  requestURI         : vars.requestURI,
-  remoteAddress      : vars.remoteAddress,
-  httpMethod         : vars.httpMethod,
-  flowName           : vars.flowName,
-  businessProcessName: vars.businessProcessName,
-  downstreamResponse : vars.downstreamResponse,
-  logMessage         : vars.logMessage
-}]]>
-        </ee:set-variable>
-      </ee:variables>
-    </ee:transform>
+    <operation name="logWithMasking"
+        doc:description="Logs sensitive data while masking or anonymizing certain information to ensure privacy and security.">
 
-    <ee:transform doc:name="Set payloadToLogWithMask">
-      <ee:variables>
-        <ee:set-variable variableName="payloadToLogWithMask">
-          <![CDATA[%dw 2.0
-output application/json
-import mapLeafValues from dw::util::Tree
-var fieldsToMask = vars.maskParams
----
-(if (fieldsToMask != null) vars.paylodToLog mapLeafValues ((value, path) -> if (fieldsToMask contains path[-1].selector)  "*******" else value) else vars.paylodToLog)
-]]>
-        </ee:set-variable>
-      </ee:variables>
-    </ee:transform>
+        <parameters>
+            <parameter name="message"    use="REQUIRED"    type="string"                                                doc:description="Free text to describe context of logging this log or exception entry" />
+            <parameter name="content"    use="OPTIONAL"    type="string" role="CONTENT"                                 doc:description="Can contain attributes/payloads for logs, or exception payload for errors" />
+            <parameter name="tracePoint"                   type="tracePoint"            defaultValue="START" />
+            <parameter name="level"                        type="priority"              defaultValue="INFO" />
+            <parameter name="userId"     use="OPTIONAL"    type="string"                                                doc:description="The user of transaction" />
+            <parameter name="category"   use="OPTIONAL"    type="string"                defaultValue="${api.category}"  doc:description="Specifies a category name that it adds to the log trace, before the output object. You might use a category to route your log messages, or you might set log levels based on category" />
+            <parameter name="correlationId" tab="Advanced" type="string"                defaultValue="#[correlationId]" doc:description="Unique identifier value that is attached to messages that allows reference to a particular transaction or event chain" />
+        </parameters>
 
-    <mule:choice doc:name="Log Level">
-      <mule:when expression='#[upper(vars.logLevel) == "DEBUG"]'>
-        <mule:logger level="DEBUG" doc:name="Log DEBUG" message="#[vars.payloadToLogWithMask]" />
-      </mule:when>
-      <mule:when expression='#[upper(vars.logLevel) == "ERROR"]'>
-        <mule:logger level="ERROR" doc:name="Log ERROR" message="#[vars.payloadToLogWithMask]" />
-      </mule:when>
-      <mule:when expression='#[upper(vars.logLevel) == "TRACE"]'>
-        <mule:logger level="TRACE" doc:name="Log TRACE" message="#[vars.payloadToLogWithMask]" />
-      </mule:when>
-      <mule:when expression='#[upper(vars.logLevel) == "WARN"]'>
-        <mule:logger level="WARN"  doc:name="Log WARN"  message="#[vars.payloadToLogWithMask]" />
-      </mule:when>
-      <mule:otherwise>
-        <mule:logger level="INFO"  doc:name="Log INFO"  message="#[vars.payloadToLogWithMask]" />
-      </mule:otherwise>
-    </mule:choice>
-  </mule:sub-flow>
+        <body>
+            <mule:try>
+                <mule:set-variable variableName="logTrace"
+                    value='#[%dw 2.0
+        output application/json indent=true
 
-  <operation name="LogMessage" doc:description="This operation builds a standard message and logs into the cloudhub log file">
-    <parameters>
-      <parameter name="logLevel"            type="log-level-type"  displayName="Log Level"                            defaultValue="DEBUG"                       doc:description="Select the appropriate log level" />
-      <parameter name="correlationId"       type="string"          displayName="Correlation Id"        use="OPTIONAL" defaultValue="#[correlationId]"            doc:description="Pass Correlation Id" />
-      <parameter name="apiName"             type="string"          displayName="API Name"              use="OPTIONAL" defaultValue="#[p('api.name')]"            doc:description="API Name" />
-      <parameter name="step"                type="string"          displayName="Step"                  use="OPTIONAL"                                            doc:description="Step of log" />
-      <parameter name="requestURI"          type="any"             displayName="Request URI"           use="OPTIONAL" defaultValue="#[attributes.requestUri]"    doc:description="HTTP Request URI" />
-      <parameter name="remoteAddress"       type="any"             displayName="Remote Address"        use="OPTIONAL" defaultValue="#[attributes.remoteAddress]" doc:description="IP Address of the calling System" />
-      <parameter name="httpMethod"          type="any"             displayName="HTTP Method"           use="OPTIONAL" defaultValue="#[attributes.method]"        doc:description="HTTP Method" />
-      <parameter name="flowName"            type="any"             displayName="Flow Name"             use="OPTIONAL" defaultValue="#[flow.name]"                doc:description="Logging flow Name or Errored flow name" />
-      <parameter name="businessProcessName" type="string"          displayName="Business Process Name" use="OPTIONAL" defaultValue="#[vars.businessProcessName]" doc:description="Business Process Name" />
-      <parameter name="downstreamResponse"  type="any"             displayName="Downstream Response"   use="OPTIONAL"                                            doc:description="Downstream Response" />
-      <parameter name="logMessage"          type="any"             displayName="Log Message"           use="OPTIONAL"                                            doc:description="Message to log like payload, queryParams, headers" />
-      <parameter name="maskParams"          type="string"          displayName="Mask Parameters"       use="OPTIONAL" defaultValue="#[p('mask.parameters')]"     doc:description="Pass parameters to mask" example="abc,xyz" />
-    </parameters>
-    <body>
-      <mule:async doc:name="Async">
-        <mule:flow-ref doc:name="call-logging-main-flow" name="logging-main-flow" />
-      </mule:async>
-    </body>
-    <errors>
-      <error type="ANY" />
-    </errors>
-  </operation>
+        fun stringifyAny(inputData: Any, contentType: String) =
+            if ((contentType contains "application/xml") or
+                    (contentType contains "application/dw"))
+              write(inputData, contentType, {indent: false})
+            else if (contentType == "*/*" or (contentType contains "application/json"))
+              inputData
+            else
+              write(inputData, contentType)
 
+        fun maskString(value) =
+            value
+                    replace /[0-9]/ with "*"
+                    replace /[A-Z]/ with "X"
+                    replace /[a-z]/ with "x"
+                    replace "@" with "*"
+
+        fun maskNumber(value) =
+            value replace /[0-9]/ with "*"
+
+        var blacklistedKeys = splitBy(vars.fieldsMasking, ",")
+
+        fun maskObject(obj: Object) =
+            obj mapObject ((value, key, index) -> {
+                    (key) : (maskData(key, value))
+            })
+
+        fun maskArray(obj: Array) =
+            obj map ((item, index) ->
+                    if (item is Object)
+                            maskObject(item)
+                    else item
+            )
+
+        fun maskData(key: String, value: Any) =
+            if (blacklistedKeys contains key)
+                    if (value is String)
+                            maskString(value)
+                    else if (value is Number)
+                            maskNumber(value)
+                    else if (value is Array)
+                            value map ((item, index) ->
+                                    if (item is Object)
+                                            maskObject(item)
+                                    else maskString(item)
+                            )
+                    else value
+            else if (value is Object)
+                    value mapObject ((value, key, index) -> {
+                            (key) : (maskData(key, value))
+                    })
+            else if (value is Array)
+                    if (blacklistedKeys contains key)
+                            value map ((item, index) ->
+                                    if (item is Object)
+                                            maskObject(item)
+                                    else maskString(item)
+                            )
+                    else maskArray(value)
+            else value
+
+
+        fun main(content: Any)=
+            if (isEmpty(blacklistedKeys))
+                    content
+            else
+                    if (content is Object)
+                            maskObject(content)
+                    else if (content is Array)
+                            maskArray(content)
+                    else content
+
+        var contentType = vars.content.^mediaType default vars.content.^mimeType
+        ---
+        {
+            correlationId     : vars.correlationId,
+            flowName          : flow.name as String default "unknown",
+            message           : vars.message,
+            tracePoint        : vars.tracePoint,
+            content           : if(vars.content != null) stringifyAny(main(vars.content), contentType) else "",
+            applicationName   : vars.appName,
+            applicationVersion: vars.appVersion,
+            timestamp         : now(),
+            environment       : vars.environment
+        }]' />
+                <mule:error-handler>
+                    <mule:on-error-continue
+                        doc:name="On Error Continue"
+                        enableNotifications="true" logException="true"
+                        type="ANY">
+                        <mule:set-variable variableName="logTrace"
+                            value='#[
+                            output application/json skipNullOn="everywhere", indent=false
+                            ---
+                            {
+                                correlationId     : vars.correlationId,
+                                flowName          : flow.name as String default "unknown",
+                                message           : vars.message,
+                                tracePoint        : vars.tracePoint,
+                                content           : "Error parsing expression. See logs for details.",
+                                applicationName   : vars.appName,
+                                applicationVersion: vars.appVersion,
+                                timestamp         : now(),
+                                environment       : vars.environment
+                            }]'
+                            doc:name="Set Variable"
+                        />
+                    </mule:on-error-continue>
+                </mule:error-handler>
+            </mule:try>
+
+            <mule:choice doc:name="Priority/Level">
+                <mule:when expression='#[vars.level == "INFO"]' ><mule:logger level="INFO"  message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
+                <mule:when expression='#[vars.level == "WARN"]' ><mule:logger level="WARN"  message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
+                <mule:when expression='#[vars.level == "DEBUG"]'><mule:logger level="DEBUG" message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
+                <mule:when expression='#[vars.level == "ERROR"]'><mule:logger level="ERROR" message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
+                <mule:when expression='#[vars.level == "TRACE"]'><mule:logger level="TRACE" message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
+                <mule:otherwise>                                 <mule:logger level="ERROR" message="Unknown log level received" category="#[vars.category]" /></mule:otherwise>
+            </mule:choice>
+        </body>
+    </operation>
+
+    <operation name="logWithoutMasking"
+        doc:description="Logs data without applying any masking, capturing the full content for debugging or non-sensitive use cases">
+
+        <parameters>
+            <parameter name="message"    use="REQUIRED"    type="string"                                                doc:description="Free text to describe context of logging this log or exception entry" />
+            <parameter name="content"    use="OPTIONAL"    type="string" role="CONTENT"                                 doc:description="Can contain attributes/payloads for logs, or exception payload for errors" />
+            <parameter name="tracePoint"                   type="tracePoint"            defaultValue="START" />
+            <parameter name="level"                        type="logLevel"              defaultValue="INFO" />
+            <parameter name="userId"     use="OPTIONAL"    type="string"                                                doc:description="The user of transaction" />
+            <parameter name="category"   use="OPTIONAL"    type="string"                defaultValue="${api.category}"  doc:description="Specifies a category name that it adds to the log trace, before the output object. You might use a category to route your log messages, or you might set log levels based on category" />
+            <parameter name="correlationId" tab="Advanced" type="string"                defaultValue="#[correlationId]" doc:description="Unique identifier value that is attached to messages that allows reference to a particular transaction or event chain" />
+        </parameters>
+
+        <body>
+            <mule:try doc:name="Try">
+                <mule:set-variable variableName="logTrace"
+                    value='#[%dw 2.0
+        output application/json indent=true
+
+        fun stringifyAny(inputData: Any, contentType: String) =
+                if ((contentType contains "application/xml") or
+                    (contentType contains "application/dw"))
+                    write(inputData, contentType, {indent: false})
+            else if (contentType == "*/*" or (contentType contains "application/json"))
+                    inputData
+            else
+                    write(inputData, contentType)
+
+        var contentType = vars.content.^mediaType default vars.content.^mimeType
+        ---
+        {
+            correlationId: vars.correlationId,
+            flowName: flow.name as String default "unknown",
+            message: vars.message,
+            tracePoint: vars.tracePoint,
+            content: if(vars.content != null) stringifyAny(vars.content, contentType) else "",
+            applicationName: vars.appName,
+            applicationVersion: vars.appVersion,
+            timestamp: now(),
+            environment: vars.environment
+
+        }]' />
+                <mule:error-handler>
+                    <mule:on-error-continue
+                        enableNotifications="true" logException="true"
+                        doc:name="On Error Continue"
+                        type="ANY">
+                        <mule:set-variable variableName="logTrace"
+                            value='#[
+                            output application/json skipNullOn="everywhere", indent=false
+                            ---
+                            {
+                                correlationId     : vars.correlationId,
+                                flowName          : flow.name as String default "unknown",
+                                message           : vars.message,
+                                tracePoint        : vars.tracePoint,
+                                content           : "Error parsing expression. See logs for details.",
+                                applicationName   : vars.appName,
+                                applicationVersion: vars.appVersion,
+                                timestamp         : now(),
+                                environment       : vars.environment
+                            }]'
+                        />
+                    </mule:on-error-continue>
+                </mule:error-handler>
+            </mule:try>
+
+            <mule:choice doc:name="Priority/Level">
+                <mule:when expression='#[vars.level == "INFO"]' ><mule:logger level="INFO"  message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
+                <mule:when expression='#[vars.level == "WARN"]' ><mule:logger level="WARN"  message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
+                <mule:when expression='#[vars.level == "DEBUG"]'><mule:logger level="DEBUG" message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
+                <mule:when expression='#[vars.level == "ERROR"]'><mule:logger level="ERROR" message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
+                <mule:when expression='#[vars.level == "TRACE"]'><mule:logger level="TRACE" message="#[vars.logTrace]"           category="#[vars.category]" /></mule:when>
+                <mule:otherwise>                                 <mule:logger level="ERROR" message="Unknown log level received" category="#[vars.category]" /></mule:otherwise>
+            </mule:choice>
+
+        </body>
+    </operation>
 </module>

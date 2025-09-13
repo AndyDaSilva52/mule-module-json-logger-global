@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <catalogs xmlns="http://www.mulesoft.org/schema/mule/types">
 
-  <catalog name="log-level-type" format="application/json">
-    <schema format="application/json+schema" location="./log-level-type-schema.json" />
-  </catalog>
+    <catalog name="priority" format="application/json">
+        <schema format="application/json+schema" location="./priority-enum-type-schema.json" />
+    </catalog>
+
+    <catalog name="tracePoint" format="application/json">
+        <schema format="application/json+schema" location="./trace-point-enum-type-schema.json" />
+    </catalog>
 
 </catalogs>

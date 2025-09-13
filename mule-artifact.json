@@ -1,0 +1,19 @@
+{
+  "minMuleVersion": "4.6.0",
+  "javaSpecificationVersions": [
+    "1.8", "11", "17"
+  ], 
+  "classLoaderModelLoaderDescriptor": {
+    "id": "mule",
+    "attributes": {
+      "privilegedExportedPackages": [],
+      "privilegedArtifactIds": [],
+      "exportedPackages": [
+        "modules"
+      ],
+      "exportedResources": [
+      	"loggerMOdule.dwl"
+      ]
+    }
+  }
+}
